@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<accused>
+	<person name="Иван Иванов">
+		<id>1</id>
+		<age>18</age>
+	</person>
+	<person name="Петр Петров">
+		<id>2</id>
+		<age>18</age>
+	</person>
+	<person name="Лало Саламанка">
+		<id>3</id>
+		<age>42</age>
+	</person>
+	<person name="Туко Саламанка">
+		<id>4</id>
+		<age>36</age>
+	</person>
+	<person name="Гектор Саламанка">
+		<id>5</id>
+		<age>75</age>
+	</person>
+	<person name="Пабло Эскобар">
+		<id>6</id>
+		<age>45</age>
+	</person>
+	<person name="Подсудимый один">
+		<id>100</id>
+		<age>25</age>
+	</person>
+	<person name="Подсудимый два">
+		<id>101</id>
+		<age>38</age>
+	</person>
+	<person name="Еще один">
+		<id>200</id>
+		<age>30</age>
+	</person>
+	<person name="И еще">
+		<id>201</id>
+		<age>38</age>
+	</person>
+</accused>

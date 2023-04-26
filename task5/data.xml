@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding = "utf-8"?>
+<accused>
+    <person name="Еще один">
+        <id>200</id>
+        <age>30</age>
+    </person>
+    <person name="И еще">
+        <id>201</id>
+        <age>38</age>
+    </person>
+</accused>
