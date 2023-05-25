@@ -1,79 +1,148 @@
-import numpy as np
+# ньютон рафсон
+import copy
+from math import fabs
 
 
-def f(x):
-    return 5 * x[0]**2 + x[1]**2 - x[0] * x[1] + x[0]
+def F(x):
+    return 5*x[0]**2 + x[1]**2 - x[0]*x[1] + x[0]
 
 
-def gradient(f, x):
-    grad = np.zeros(2)
-    for i in range(2):
-        eps = 1e-8
-        delta = np.zeros(2)
-        delta[i] = eps
-        f_plus = f(x + delta)
-        f_minus = f(x - delta)
-        grad[i] = (f_plus - f_minus) / (2 * eps)
-    return grad
+def sumV(v1, v2):
+        return [v1[i]+v2[i] for i in range(len(v1))]
 
 
-def hessian(f, x):
-    hess = np.zeros((2, 2))
-    for i in range(2):
-        eps1 = 1e-8
-        delta1 = np.zeros(2)
-        delta1[i] = eps1
-        for j in range(i, 2):
-            eps2 = 1e-8
-            delta2 = np.zeros(2)
-            delta2[j] = eps2
-            f_pp = f(x + delta1 + delta2)
-            f_pm = f(x + delta1 - delta2)
-            f_mp = f(x - delta1 + delta2)
-            f_mm = f(x - delta1 - delta2)
-            hess[i][j] = (f_pp - f_pm - f_mp + f_mm) / (4 * eps1 * eps2)
-            hess[j][i] = hess[i][j]
-    return hess
+def diffV(v1, v2):
+    return [v1[i]-v2[i] for i in range(len(v1))]
 
 
-def newton_raphson(eps1, eps2, x0, f, gradient, hessian, M=10):
-    flag = False
-    x_k_next = 0
-    k = 0
-    x_k = x0
-    while not flag:
-        grad = gradient(f, x_k)
-        norma = np.linalg.norm(grad)
-        if norma <= eps1:
-            x_otv = x_k
-            print('norma <= eps1')
-            return x_otv,  k
-        elif k < M:
-            hess = hessian(f, x_k)
-            eigvals = np.linalg.eigvals(hess)
-            if np.all(eigvals > 0):
-                d_k = -np.linalg.solve(hess, grad)
+def v_multiply_k(v1, k):
+    return [i*k for i in v1]
+
+
+def dF(x):
+    h = 0.1**6
+    mas = []
+    for i in range(len(x)):
+        x1 = [x[j] if j!=i else x[j]+h for j in range(len(x))]
+        mas.append((F(x1)-F(x))/h)
+    return mas
+
+
+def norma(mas):
+    return max([fabs(i) for i in mas])
+
+
+def ddF(x):                         ###
+    h = 0.1**5
+    mas = [[0]*len(x) for i in x]
+    for i in range(len(mas)):
+        x1 = [x[j] if j!=i else x[j]+h for j in range(len(x))]
+        x2 = [x[j] if j!=i else x[j]-h for j in range(len(x))]
+        mas[i][i] = (F(x1)-2*F(x)+F(x2))/h**2
+    x1 = [x[j] if j!=i else x[j]+h for j in range(len(x))]
+    x2 = [x[j] if j==i else x[j]+h for j in range(len(x))]
+    x3 = [x[j]+h for j in range(len(x))]
+    mas[0][1] = mas[1][0] = (F(x3)-F(x2)-F(x1)+F(x))/h**2
+    return mas
+
+
+def inverse(A):
+    def minor(A, i, j):
+        M = copy.deepcopy(A)
+        del M[i]
+        for i in range(len(A[0]) - 1):
+            del M[i][j]
+        return M
+
+    def det(A):
+        m = len(A)
+        n = len(A[0])
+        if m != n:
+            return None
+        if n == 1:
+            return A[0][0]
+        signum = 1
+        determinant = 0
+        for j in range(n):
+            determinant += A[0][j] * signum * det(minor(A, 0, j))
+            signum *= -1
+        return determinant
+
+    def transpose(array):
+        res = []
+        n = len(array)
+        m = len(array[0])
+        for j in range(m):
+            tmp=[]
+            for i in range(n):
+                tmp=tmp+[array[i][j]]
+            res = res+[tmp]
+        return res
+
+    A = transpose(A)
+    result = copy.deepcopy(A)
+    for i in range(len(A)):
+        for j in range(len(A[0])):
+            tmp = minor(A, i, j)
+            if (i +j) % 2 == 1:
+                result[i][j] = -1*det(tmp) / det(A)
             else:
-                d_k = -grad
-            t_k = 1
-            while f(x_k + t_k*d_k) > f(x_k) + eps2*t_k*np.dot(grad, d_k):
-                t_k /= 2
-            x_k_next = x_k + t_k*d_k
-            if np.linalg.norm(x_k_next - x_k) < eps1 or np.linalg.norm(f(x_k_next) - f(x_k)) < eps1:
-                flag = True
+                result[i][j] = 1*det(tmp) / det(A)
+    return result
+
+
+def MVpr(M,V):
+    x = [0]*len(V)
+    for i in range(len(V)):
+        for j in range(len(V)):
+            x[i] += M[i][j]*V[j]
+    return x
+
+
+
+
+def mnr(x0, eps1, eps2, N):
+    def pd(x0, s):
+        a, b, eps = -100, 100, 0.1**6
+        delta = eps/2
+        df = v_multiply_k(s, -1)
+        while True:
+            x1 = (a+b-delta)/2
+            newargX = [x0[i]-x1*df[i] for i in range(len(x0))]
+            y1 = (a+b+delta)/2
+            newargY = [x0[i]-y1*df[i] for i in range(len(x0))]
+            if F(newargX) < F(newargY):
+                b = y1
             else:
-                x_k = x_k_next
-                k += 1
-        else:
-            x_otv = x_k
-            print('k >= M')
-            return x_otv, k
-    print('norm(x_k_next - x_k) < eps1 or norm(f(x_k_next) - f(x_k)) < eps1')
-    return x_k_next, k
+                a = x1
+            if fabs(b-a) <= 2*eps:
+                x1 = (a+b)/2
+                return x1
 
 
-eps1 = 0.1
-eps2 = 0.15
-x0 = np.array([1.5, 1])
-result, k = newton_raphson(eps1, eps2, x0, f, gradient, hessian)
-print(result, k)
+    if norma(dF([1.5, 1])) < eps1:
+        x_result = x0
+    else:
+        it = 0
+        count = 0
+        while True:
+            s = MVpr(inverse(ddF(x0)), v_multiply_k(dF(x0), -1))                #
+            alpha = pd(x0, s)                                                   #
+            x = sumV(x0, v_multiply_k(s, alpha))
+            if norma(diffV(x, x0)) < eps2 and fabs(F(x) - F(x0)) < eps2:
+                count += 1
+                x_result = x
+                if count == 2: break
+            x0 = x
+            if it >= N:
+                x_result = x
+                break
+            print(f'k = {it}')
+            print(x)
+            it += 1
+    print(f'Количество интераций: {it} \n{x_result = } \nнорма градиента: {norma(dF(x))}')
+
+N = 1000
+x0 = [1.5, 1]
+eps1, eps2 = 0.1**5, 0.1**5
+mnr(x0, eps1, eps2, N)
