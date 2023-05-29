@@ -1,31 +1,60 @@
+
 import numpy as np
 
-class Perceptron:
-    def __init__(self, num_inputs):
-        self.weights = np.zeros(num_inputs)
-        self.bias = 0
+def f(x):
+    return (np.exp(x)-np.exp(-x))/(np.exp(x)+np.exp(-x))
 
-    def predict(self, inputs):
-        weighted_sum = np.dot(inputs, self.weights) + self.bias
-        activation = 0 if weighted_sum <= 0 else 1
-        return activation
-
-    def train(self, training_inputs, labels, learning_rate, num_epochs):
-        for _ in range(num_epochs):
-            for inputs, label in zip(training_inputs, labels):
-                prediction = self.predict(inputs)
-                update = learning_rate * (label - prediction)
-                self.weights += update * inputs
-                self.bias += update
+def df(x):
+    return 1 - f(x)**2
 
 
-training_inputs = np.array([[0, 0], [0, 1], [1, 0], [1, 1]])
-labels = np.array([0, 0, 0, 1])
+W1 = np.array([[-0.2, 0.3, -0.4], [0.1, -0.3, -0.4]])
+W2 = np.array([0.2, 0.3])
 
-perceptron = Perceptron(num_inputs=2)
-perceptron.train(training_inputs, labels, learning_rate=0.1, num_epochs=10)
+def go_forward(inp):
+    sum = np.dot(W1, inp)
+    out = np.array([f(x) for x in sum])
 
-test_inputs = np.array([[0, 0], [0, 1], [1, 0], [1, 1]])
-for inputs in test_inputs:
-    prediction = perceptron.predict(inputs)
-    print(f"Input: {inputs}  Prediction: {prediction}")
+    sum = np.dot(W2, out)
+    y = f(sum)
+    return (y, out)
+
+def train(epoch):
+    global W2, W1
+    lmd = 0.01          # шаг обучения
+    N = 10000           # число итераций при обучении
+    count = len(epoch)
+
+    for k in range(N):
+        x = epoch[np.random.randint(0, count)]  # случайных выбор входного сигнала из обучающей выборки
+        y, out = go_forward(x[0:3])             # прямой проход по НС и вычисление выходных значений нейронов
+
+        delta = (f(y)-x[-1])*df(y)                  # локальный градиент
+        W2[0] = W2[0] - lmd * delta * out[0]    # корректировка веса первой связи
+        W2[1] = W2[1] - lmd * delta * out[1]    # корректировка веса второй связи
+
+        delta2 = W2*delta*df(out)               # вектор из 2-х величин локальных градиентов
+
+        # корректировка связей первого слоя
+        W1[0, :] = W1[0, :] - np.array(x[0:3]) * delta2[0] * lmd
+        W1[1, :] = W1[1, :] - np.array(x[0:3]) * delta2[1] * lmd
+
+# обучающая выборка (она же полная выборка)
+epoch = [(-1, -1, -1, -1),
+         (-1, -1, 1, 1),
+         (-1, 1, -1, -1),
+         (-1, 1, 1, 1),
+         (1, -1, -1, -1),
+         (1, -1, 1, 1),
+         (1, 1, -1, -1),
+         (1, 1, 1, 1)]
+
+
+train(epoch)
+
+# проверка полученных результатов
+for x in epoch:
+    y, out = go_forward(x[0:3])
+    print(f"Выходное значение НС: {y} => {x[-1]}")
+
+print(f"Оптимальные веса: {W1}; {W2}")
